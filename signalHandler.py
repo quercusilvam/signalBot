@@ -22,12 +22,17 @@ class SignalHandler:
         """Send receipt of given type for all given messages"""
         responses = []
         for m in messages:
-            logging.debug(m)
-            ac = m.get_source_account()
-            ts = m.get_timestamp()
-            responses.append(self._parse_receipt_response(
-                self._call(self._cmd_send_receipt, [ac, '-t', ts, '--type', receipt_type])
-            ))
+            responses.append(self.send_receipt(m, receipt_type))
+        return responses
+
+    def send_receipt(self, message, receipt_type=_cmd_send_receipt_default_type):
+        """Send receipt of given type for one message"""
+        logging.debug(f'send_receipt.message: {message}')
+        ac = message.get_source_account()
+        ts = message.get_timestamp()
+        return self._parse_receipt_response(
+            self._call(self._cmd_send_receipt, [ac, '-t', ts, '--type', receipt_type])
+        )
 
     def _call(self, command, extra_args=[]):
         """Call main program"""
@@ -65,7 +70,7 @@ class SignalHandler:
             logging.info(f'Parse receipt response')
             logging.debug(f'response_str: {line}')
             j = json.loads(line)
-            receipts.append(j['type'])
+            receipts.append(j['results'][0]['type'])
 
         return receipts
 
