@@ -39,9 +39,12 @@ class SignalBot():
         if body is None:
             logging.info('No body message. Looking for other message types')
             logging.warning('Not implemented yet!')
-        elif not self._find_known_message_body_pattern(body):
+        elif self._find_known_message_body_pattern(body):
+            self._sh.send_reaction(message, self._emoji_ok)
+        else:
             logging.warning('Message type unknown')
             logging.debug(f'message_body: {message}')
+            self._sh.send_reaction(message, self._emoji_unknown)
 
     def _find_known_message_body_pattern(self, message_body):
         """Use regexp to find known message instruction"""

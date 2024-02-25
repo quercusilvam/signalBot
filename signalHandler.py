@@ -13,6 +13,8 @@ class SignalHandler:
     _cmd_receive = 'receive'
     _cmd_send_receipt = 'sendReceipt'
     _cmd_send_receipt_default_type = 'read'
+    _cmd_send_reaction = 'sendReaction'
+    _cmd_send_reaction_emoji_ok = '👍'
 
     def receive_new_messages(self):
         """Receive new messages from server"""
@@ -34,6 +36,23 @@ class SignalHandler:
             self._call(self._cmd_send_receipt, [ac, '-t', ts, '--type', receipt_type])
         )
 
+    def send_reactions(self, messages, emoji=_cmd_send_reaction_emoji_ok):
+        """Send reaction for all given messages"""
+        responses = []
+        for m in messages:
+            responses.append(self.send_reaction(m, emoji))
+        return responses
+
+    def send_reaction(self, message, emoji=_cmd_send_reaction_emoji_ok):
+        """Send reaction for message"""
+        logging.debug(f'send_reaction.message: {message}')
+        logging.debug(f'send_reaction.emoji: {emoji}')
+        ac = message.get_source_account()
+        ts = message.get_timestamp()
+        return self._parse_receipt_response(
+            self._call(self._cmd_send_reaction, [ac, '-a', ac, '-t', ts, '-e', emoji])
+        )
+
     def _call(self, command, extra_args=[]):
         """Call main program"""
 
@@ -43,7 +62,7 @@ class SignalHandler:
         if result.returncode != 0:
             logging.error(f'signal-cli failed with RC={result.returncode}')
             logging.error(f'stderr: {result.stderr}')
-            return
+            raise RuntimeError('Run signal-cli failed')
 
         logging.debug(f'result.stdout: {result.stdout}')
         return result.stdout.splitlines()
@@ -55,9 +74,14 @@ class SignalHandler:
         for ot in output_lines:
             line = ot.decode(self._default_encoding)
             logging.info(f'Parse new message')
-            logging.debug(f'message_str: {line}')
+            logging.debug(f'_parse_messages.message_str: {line}')
             j = json.loads(line)
-            new_messages.append(SignalMessage(j))
+            if 'receiptMessage' in j['envelope']:
+                logging.info('This is receiptMessage. Ignoring')
+            elif 'dataMessage' in j['envelope']:
+                new_messages.append(SignalMessage(j))
+            else:
+                logging.warning('Message type unknown')
 
         return new_messages
 
