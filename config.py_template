@@ -1,0 +1,2 @@
+# List of allowed end users. Messages from other accounts will be ignored by bot
+ALLOWED_END_USERS=[]
