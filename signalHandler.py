@@ -54,13 +54,19 @@ class SignalHandler:
             self._call(self._cmd_send_reaction, [ac, '-a', ac, '-t', ts, '-e', emoji])
         )
 
-    def send_message(self, recipient, message_body):
+    def send_message(self, recipient, message_body, quote_timestamp=None):
         """Send a message to another user"""
         logging.debug(f'send_message.recipient: {recipient}')
         logging.debug(f'send_message.message_body: {message_body}')
-        return self._parse_receipt_response(
-            self._call(self._cmd_send_message, [recipient, '-m', message_body])
-        )
+        if quote_timestamp is None:
+            return self._parse_receipt_response(
+                self._call(self._cmd_send_message, [recipient, '-m', message_body])
+            )
+        else:
+            logging.debug(f'send_message.quote_timestamp: {quote_timestamp}')
+            return self._parse_receipt_response(
+                self._call(self._cmd_send_message, [recipient, '-m', message_body, '--quote-timestamp', quote_timestamp, '--quote-author', recipient])
+            )
 
     def _call(self, command, extra_args=[]):
         """Call main program"""
@@ -87,7 +93,7 @@ class SignalHandler:
             j = json.loads(line)
             if 'receiptMessage' in j['envelope']:
                 logging.info('This is receiptMessage. Ignoring')
-            if 'syncMessage' in j['envelope']:
+            elif 'syncMessage' in j['envelope']:
                 logging.info('This is syncMessage. Ignoring')
             elif 'dataMessage' in j['envelope']:
                 new_messages.append(SignalMessage(j))

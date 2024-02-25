@@ -62,7 +62,7 @@ class SignalBot():
     def _process_ping_message(self, message):
         """Return simple pong"""
         logging.info('BOT - Found PING message. Responding PONG')
-        self._sh.send_message(message.get_source_account(), 'pong')
+        self._sh.send_message(message.get_source_account(), 'pong', message.get_timestamp())
 
     def _process_yt_message(self, message):
         """Download given YouTube as mp3 or mp4"""
