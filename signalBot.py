@@ -18,6 +18,7 @@ class SignalBot():
     _emoji_unknown = '❓'
     _emoji_ok = '👍'
 
+    _pattern_ping = r'(ping)'
     _pattern_yt = r'(https?://)?(www\.)?(m\.)?(youtube\.com|youtu\.be)/.*'
 
     def __init__(self, filename=_log_filename, encoding=_log_default_encoding, level=_log_default_level):
@@ -35,32 +36,42 @@ class SignalBot():
         self._sh.send_receipt(message)
 
         body = message.get_message_body()
-        logging.info(f'Process new message {message.get_timestamp()}')
+        logging.info(f'BOT - trying to process message {message.get_timestamp()}')
         if body is None:
-            logging.info('No body message. Looking for other message types')
+            logging.info('BOT - No body message. Looking for other message types')
             logging.warning('Not implemented yet!')
-        elif self._find_known_message_body_pattern(body):
+        elif self._find_known_message_body_pattern(message):
             self._sh.send_reaction(message, self._emoji_ok)
         else:
-            logging.warning('Message type unknown')
+            logging.warning('BOT - Message type unknown')
             logging.debug(f'message_body: {message}')
             self._sh.send_reaction(message, self._emoji_unknown)
 
-    def _find_known_message_body_pattern(self, message_body):
+    def _find_known_message_body_pattern(self, message):
         """Use regexp to find known message instruction"""
-        if re.search(self._pattern_yt, message_body) is not None:
-            self._process_yt_message(message_body)
+        body = message.get_message_body()
+
+        if re.fullmatch(self._pattern_ping, body, re.IGNORECASE) is not None:
+            self._process_ping_message(message)
+            return True
+        if re.search(self._pattern_yt, body) is not None:
+            self._process_yt_message(message)
             return True
         return False
 
-    def _process_yt_message(self, message_body):
+    def _process_ping_message(self, message):
+        """Return simple pong"""
+        logging.info('BOT - Found PING message. Responding PONG')
+        self._sh.send_message(message.get_source_account(), 'pong')
+
+    def _process_yt_message(self, message):
         """Download given YouTube as mp3 or mp4"""
-        logging.info('Found YouTube message. Download file')
+        logging.info('BOT - Found YouTube message. Download file')
         logging.warning('Not implemented yet!')
 
     def _process_reaction(self, message):
         """Process reaction to previous messages"""
-        logging.info(f'Type of message: reaction')
+        logging.info(f'BOT - Found reaction')
 
 
 def main():

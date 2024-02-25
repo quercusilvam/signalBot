@@ -15,6 +15,7 @@ class SignalHandler:
     _cmd_send_receipt_default_type = 'read'
     _cmd_send_reaction = 'sendReaction'
     _cmd_send_reaction_emoji_ok = '👍'
+    _cmd_send_message = 'send'
 
     def receive_new_messages(self):
         """Receive new messages from server"""
@@ -53,6 +54,14 @@ class SignalHandler:
             self._call(self._cmd_send_reaction, [ac, '-a', ac, '-t', ts, '-e', emoji])
         )
 
+    def send_message(self, recipient, message_body):
+        """Send a message to another user"""
+        logging.debug(f'send_message.recipient: {recipient}')
+        logging.debug(f'send_message.message_body: {message_body}')
+        return self._parse_receipt_response(
+            self._call(self._cmd_send_message, [recipient, '-m', message_body])
+        )
+
     def _call(self, command, extra_args=[]):
         """Call main program"""
 
@@ -78,6 +87,8 @@ class SignalHandler:
             j = json.loads(line)
             if 'receiptMessage' in j['envelope']:
                 logging.info('This is receiptMessage. Ignoring')
+            if 'syncMessage' in j['envelope']:
+                logging.info('This is syncMessage. Ignoring')
             elif 'dataMessage' in j['envelope']:
                 new_messages.append(SignalMessage(j))
             else:
