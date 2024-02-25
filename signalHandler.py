@@ -8,16 +8,17 @@ import sys
 
 class SignalHandler:
     """Handle signal program - parse output, handle commands etc."""
+    _default_encoding = 'utf8'
     _signal_cmd = ['bin/signal-cli', '-o', 'json']
-
-    def __init__(self, log_filename='signalHandler.log', log_level=logging.INFO):
-        logging.basicConfig(filename=log_filename, encoding='utf-8', level=log_level)
+    _cmd_receive = 'receive'
+    _cmd_send_receipt = 'sendReceipt'
+    _cmd_send_receipt_default_type = 'read'
 
     def receive_new_messages(self):
         """Receive new messages from server"""
-        return self._parse_messages(self._call('receive'))
+        return self._parse_messages(self._call(self._cmd_receive))
 
-    def send_receipts(self, messages, type='read'):
+    def send_receipts(self, messages, receipt_type=_cmd_send_receipt_default_type):
         """Send receipt of given type for all given messages"""
         responses = []
         for m in messages:
@@ -25,7 +26,7 @@ class SignalHandler:
             ac = m.get_source_account()
             ts = m.get_timestamp()
             responses.append(self._parse_receipt_response(
-                self._call('sendReceipt', [ac, '-t', ts, '--type', type])
+                self._call(self._cmd_send_receipt, [ac, '-t', ts, '--type', receipt_type])
             ))
 
     def _call(self, command, extra_args=[]):
@@ -47,7 +48,7 @@ class SignalHandler:
         new_messages = []
 
         for ot in output_lines:
-            line = ot.decode('utf-8')
+            line = ot.decode(self._default_encoding)
             logging.info(f'Parse new message')
             logging.debug(f'message_str: {line}')
             j = json.loads(line)
@@ -60,7 +61,7 @@ class SignalHandler:
         receipts = []
 
         for ot in output_lines:
-            line = ot.decode('utf-8')
+            line = ot.decode(self._default_encoding)
             logging.info(f'Parse receipt response')
             logging.debug(f'response_str: {line}')
             j = json.loads(line)
@@ -104,6 +105,9 @@ class SignalMessage():
     def get_timestamp(self) -> str:
         return str(self._timestamp)
 
+    def get_message_body(self):
+        return self._message_body
+
     def get_sent_receipt(self) -> bool:
         return self._receipt_sent
 
@@ -114,7 +118,7 @@ class SignalMessage():
 
 if __name__ == '__main__':
     # Simple test if called directly
-    s = SignalHandler(log_filename=None, log_level=logging.DEBUG)
+    s = SignalHandler()
     logging.StreamHandler(sys.stderr)
     ms = s.receive_new_messages()
     print(s.send_receipts(ms))
