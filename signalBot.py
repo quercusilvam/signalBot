@@ -5,14 +5,13 @@ import config
 import logging
 import os
 import re
+import schedule
 import time
 import urllib
 import uuid
 
-
 from pytube import YouTube
 from signalHandler import SignalHandler
-
 
 
 class SignalBot():
@@ -100,9 +99,11 @@ def main():
     # logging.StreamHandler(sys.stderr)
     # sb.run()
     sb = SignalBot(level=logging.DEBUG)
+    schedule.every(30).seconds.until('22:30').do(sb.run)
+
     while True:
-        sb.run()
-        time.sleep(60)
+        schedule.run_pending()
+        time.sleep(1)
 
 
 if __name__ == '__main__':
