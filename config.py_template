@@ -1,2 +1,6 @@
 # List of allowed end users. Messages from other accounts will be ignored by bot
 ALLOWED_END_USERS=[]
+
+# YouTube downloader settings:
+HTTP_YT_LOCATION = ''
+YT_SERVER_PREFIX = ''

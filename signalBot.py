@@ -3,8 +3,14 @@ import sys
 
 import config
 import logging
+import os
 import re
+import time
+import urllib
+import uuid
 
+
+from pytube import YouTube
 from signalHandler import SignalHandler
 
 
@@ -20,6 +26,8 @@ class SignalBot():
 
     _pattern_ping = r'(ping)'
     _pattern_yt = r'(https?://)?(www\.)?(m\.)?(youtube\.com|youtu\.be)/.*'
+    _pytube_audio_tag = 140
+    _pytube_file_extension = '.mp4'
 
     def __init__(self, filename=_log_filename, encoding=_log_default_encoding, level=_log_default_level):
         """Init logging, signal handler etc."""
@@ -67,18 +75,34 @@ class SignalBot():
     def _process_yt_message(self, message):
         """Download given YouTube as mp3 or mp4"""
         logging.info('BOT - Found YouTube message. Download file')
-        logging.warning('Not implemented yet!')
+        dirname = str(uuid.uuid4())
+        os_path = os.path.join(config.HTTP_YT_LOCATION, dirname)
+        os.mkdir(os_path)
+        yt = YouTube(message.get_message_body())
+        filename = yt.title[:48] + self._pytube_file_extension
+        filename = re.sub(' ', '_', filename)
+        stream = yt.streams.get_by_itag(self._pytube_audio_tag)
+        final_file = stream.download(output_path=os_path, filename=filename)
+        logging.info(f'BOT - File downloaded as {final_file}')
+        parsed_filename = urllib.parse.quote_plus(filename)
+        self._sh.send_message(message.get_source_account(), f'{config.YT_SERVER_PREFIX}{dirname}/{parsed_filename}', message.get_timestamp())
+
 
     def _process_reaction(self, message):
         """Process reaction to previous messages"""
         logging.info(f'BOT - Found reaction')
+        logging.warning('Not implemented yet!')
 
 
 def main():
     """Run bot instance"""
-    sb = SignalBot(filename=None, level=logging.DEBUG)
-    logging.StreamHandler(sys.stderr)
-    sb.run()
+    # sb = SignalBot(filename=None, level=logging.DEBUG)
+    # logging.StreamHandler(sys.stderr)
+    # sb.run()
+    sb = SignalBot(level=logging.DEBUG)
+    while True:
+        sb.run()
+        time.sleep(60)
 
 
 if __name__ == '__main__':

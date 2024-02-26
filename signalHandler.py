@@ -95,6 +95,8 @@ class SignalHandler:
                 logging.info('This is receiptMessage. Ignoring')
             elif 'syncMessage' in j['envelope']:
                 logging.info('This is syncMessage. Ignoring')
+            elif 'typingMessage' in j['envelope']:
+                logging.info('This is typingMessage. Ignoring')
             elif 'dataMessage' in j['envelope']:
                 new_messages.append(SignalMessage(j))
             else:
