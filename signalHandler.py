@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import config
 import json
 import logging
 import subprocess
@@ -9,13 +10,21 @@ import sys
 class SignalHandler:
     """Handle signal program - parse output, handle commands etc."""
     _default_encoding = 'utf8'
-    _signal_cmd = ['bin/signal-cli', '-o', 'json']
+    _signal_cmd = [config.SIGNAL_CMD_PATH, '-o', 'json']
     _cmd_receive = 'receive'
     _cmd_send_receipt = 'sendReceipt'
+    _cmd_send_receipt_param_timestamp = '-t'
+    _cmd_send_receipt_param_type = '--type'
     _cmd_send_receipt_default_type = 'read'
     _cmd_send_reaction = 'sendReaction'
+    _cmd_send_reaction_param_author = '-a'
+    _cmd_send_reaction_param_timestamp = '-t'
+    _cmd_send_reaction_param_emoji = '-e'
     _cmd_send_reaction_emoji_ok = '👍'
     _cmd_send_message = 'send'
+    _cmd_send_message_param_message = '-m'
+    _cmd_send_message_param_quote_timestamp = '--quote-timestamp'
+    _cmd_send_message_param_quote_author = '--quote-author'
 
     def receive_new_messages(self):
         """Receive new messages from server"""
@@ -34,7 +43,9 @@ class SignalHandler:
         ac = message.get_source_account()
         ts = message.get_timestamp()
         return self._parse_receipt_response(
-            self._call(self._cmd_send_receipt, [ac, '-t', ts, '--type', receipt_type])
+            self._call(self._cmd_send_receipt, [
+                ac, self._cmd_send_receipt_param_timestamp, ts, self._cmd_send_receipt_param_type, receipt_type
+            ])
         )
 
     def send_reactions(self, messages, emoji=_cmd_send_reaction_emoji_ok):
@@ -51,7 +62,12 @@ class SignalHandler:
         ac = message.get_source_account()
         ts = message.get_timestamp()
         return self._parse_receipt_response(
-            self._call(self._cmd_send_reaction, [ac, '-a', ac, '-t', ts, '-e', emoji])
+            self._call(self._cmd_send_reaction, [
+                ac, self._cmd_send_reaction_param_author,
+                ac, self._cmd_send_reaction_param_timestamp,
+                ts,
+                self._cmd_send_reaction_param_emoji, emoji
+            ])
         )
 
     def send_message(self, recipient, message_body, quote_timestamp=None):
@@ -60,12 +76,22 @@ class SignalHandler:
         logging.debug(f'send_message.message_body: {message_body}')
         if quote_timestamp is None:
             return self._parse_receipt_response(
-                self._call(self._cmd_send_message, [recipient, '-m', message_body])
+                self._call(self._cmd_send_message, [
+                    recipient, self._cmd_send_message_param_message, message_body
+                ])
             )
         else:
             logging.debug(f'send_message.quote_timestamp: {quote_timestamp}')
             return self._parse_receipt_response(
-                self._call(self._cmd_send_message, [recipient, '-m', message_body, '--quote-timestamp', quote_timestamp, '--quote-author', recipient])
+                self._call(self._cmd_send_message, [
+                    recipient,
+                    self._cmd_send_message_param_message,
+                    message_body,
+                    self._cmd_send_message_param_quote_timestamp,
+                    quote_timestamp,
+                    self._cmd_send_message_param_quote_author,
+                    recipient
+                ])
             )
 
     def _call(self, command, extra_args=[]):
