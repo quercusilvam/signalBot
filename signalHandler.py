@@ -3,8 +3,16 @@
 import config
 import json
 import logging
+import requests
 import subprocess
 import sys
+
+from jsonrpcclient import request, parse, Ok
+
+
+def convert_list_to_dict(l):
+    """Return dict from list """
+    return {l[i]: l[i + 1] for i in range(0, len(l), 2)}
 
 
 class SignalHandler:
@@ -63,10 +71,13 @@ class SignalHandler:
         ts = message.get_timestamp()
         return self._parse_receipt_response(
             self._call(self._cmd_send_reaction, [
-                ac, self._cmd_send_reaction_param_author,
-                ac, self._cmd_send_reaction_param_timestamp,
+                ac,
+                self._cmd_send_reaction_param_author,
+                ac,
+                self._cmd_send_reaction_param_timestamp,
                 ts,
-                self._cmd_send_reaction_param_emoji, emoji
+                self._cmd_send_reaction_param_emoji,
+                emoji
             ])
         )
 
@@ -97,6 +108,8 @@ class SignalHandler:
     def _call(self, command, extra_args=[]):
         """Call main program"""
 
+        for i in range(0, len(extra_args)):
+            extra_args[i] = str(extra_args[i])
         args = self._signal_cmd + [command] + extra_args
         logging.info(f'Call {args}')
         result = subprocess.run(args, capture_output=True)
@@ -108,12 +121,15 @@ class SignalHandler:
         logging.debug(f'result.stdout: {result.stdout}')
         return result.stdout.splitlines()
 
-    def _parse_messages(self, output_lines):
+    def _parse_messages(self, output_lines, decoded=False):
         """Parse received messages and pack them into message class"""
         new_messages = []
 
         for ot in output_lines:
-            line = ot.decode(self._default_encoding)
+            if decoded:
+                line = ot
+            else:
+                line = ot.decode(self._default_encoding)
             logging.info(f'Parse new message')
             logging.debug(f'_parse_messages.message_str: {line}')
             j = json.loads(line)
@@ -144,8 +160,66 @@ class SignalHandler:
         return receipts
 
 
-class SignalMessage():
-    """Uncpacked single message"""
+class SignalRPCHandler(SignalHandler):
+    """Perform calls via jsonRCP endpoint; not directly"""
+    _cmd_send_receipt_param_recipient = 'recipient'
+    _cmd_send_receipt_param_timestamp = 'targetTimestamp'
+    _cmd_send_receipt_param_type = 'type'
+    _cmd_send_receipt_default_type = 'read'
+    _cmd_send_reaction_param_recipient = 'recipient'
+    _cmd_send_reaction_param_author = 'targetAuthor'
+    _cmd_send_reaction_param_timestamp = 'targetTimestamp'
+    _cmd_send_reaction_param_emoji = 'emoji'
+    _cmd_send_message_param_recipient = 'recipient'
+    _cmd_send_message_param_message = 'message'
+    _cmd_send_message_param_quote_timestamp = 'quoteTimestamp'
+    _cmd_send_message_param_quote_author = 'quoteAuthor'
+
+    def receive_new_messages(self):
+        """For RPC this is not implemented"""
+        logging.warning('This function should not be called for signalRPCHandler')
+
+    def parse_message(self, output_line):
+        return self._parse_messages([output_line], True)
+
+    def _call(self, command, extra_args=[]):
+        """Send jsonRPC request to signalcli endpoint
+
+            Note: You cannot receive things this way (there is different endpoint that stream received things)
+            Function will return Exception if you try
+        """
+
+        # Add specific keywords needed by jsonRPC
+        match command:
+            case self._cmd_receive:
+                raise RuntimeError(f'Cannot call {self._cmd_receive} in SignalRCPHandler')
+            case self._cmd_send_receipt:
+                logging.debug(f'Adding {self._cmd_send_receipt_param_recipient} keyword for {command}')
+                extra_args = [self._cmd_send_receipt_param_recipient] + extra_args
+            case self._cmd_send_reaction:
+                logging.debug(f'Adding {self._cmd_send_reaction_param_recipient} keyword for {command}')
+                extra_args = [self._cmd_send_reaction_param_recipient] + extra_args
+            case self._cmd_send_message:
+                logging.debug(f'Adding {self._cmd_send_message_param_recipient} keyword for {command}')
+                extra_args = [self._cmd_send_message_param_recipient] + extra_args
+            case _:
+                logging.debug(f'Command {command} does not need anny additional keywords')
+
+        params = convert_list_to_dict(extra_args)
+        logging.info(f'Call {command} with params {params} on {config.SIGNALRPC_POST_ENDPOINT}')
+
+        response = requests.post(config.SIGNALRPC_POST_ENDPOINT, json=request(command, params))
+        parsed = parse(response.json())
+        if isinstance(parsed, Ok):
+            print(parsed.result)
+        else:
+            raise RuntimeError(f'Access API {command} failed: {parsed.message}')
+
+        return [] # to be compatible with super class
+
+
+class SignalMessage:
+    """Unpacked single message"""
     _timestamp = ''
     _message_body = ''
     _source_account = ''
@@ -177,7 +251,7 @@ class SignalMessage():
         return self._source_account
 
     def get_timestamp(self) -> str:
-        return str(self._timestamp)
+        return self._timestamp
 
     def get_message_body(self):
         return self._message_body

@@ -1,3 +1,10 @@
+# signalcli
+SIGNAL_CMD_PATH=''
+
+# signalcli RPC
+SIGNALRPC_POST_ENDPOINT='http://localhost/api/v1/rpc'
+SIGNALRPC_MESSAGE_STREAM_ENDPOINT='http://localhost/api/v1/events'
+
 # List of allowed end users. Messages from other accounts will be ignored by bot
 ALLOWED_END_USERS=[]
 

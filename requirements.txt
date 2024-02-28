@@ -1,3 +1,5 @@
 python-crontab==3.0.0
 schedule==1.2.1
 pytube==15.0.0
+jsonrpcclient==4.0.3
+requests==2.31.0

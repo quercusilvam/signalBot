@@ -14,7 +14,7 @@ from pytube import YouTube
 from signalHandler import SignalHandler
 
 
-class SignalBot():
+class SignalBot:
     """Check new messages in signal and perform some actions"""
     _sh = None
     _log_filename = 'signalBot.log'
