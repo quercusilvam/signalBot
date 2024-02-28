@@ -1,17 +1,19 @@
 #!/usr/bin/env python3
-import sys
 
 import config
+
+import argparse
 import logging
 import os
 import re
+import requests
 import schedule
 import time
 import urllib
 import uuid
 
 from pytube import YouTube
-from signalHandler import SignalHandler
+from signalHandler import SignalHandler, SignalRPCHandler
 
 
 class SignalBot:
@@ -86,11 +88,36 @@ class SignalBot:
         parsed_filename = urllib.parse.quote_plus(filename)
         self._sh.send_message(message.get_source_account(), f'{config.YT_SERVER_PREFIX}{dirname}/{parsed_filename}', message.get_timestamp())
 
-
     def _process_reaction(self, message):
         """Process reaction to previous messages"""
         logging.info(f'BOT - Found reaction')
         logging.warning('Not implemented yet!')
+
+
+class SignalRPCBot(SignalBot):
+    """Perform signalBot actions via jsonRPC endpoint rather than"""
+    _log_filename = 'signalBot.log'
+    _log_default_level = logging.INFO
+    _log_default_encoding = 'utf8'
+
+    def __init__(self, filename=_log_filename, encoding=_log_default_encoding, level=_log_default_level):
+        """Init logging, signal handler etc."""
+        logging.basicConfig(filename=filename, encoding=encoding, level=level)
+        self._sh = SignalRPCHandler()
+
+    def run(self):
+        """Main loop of signalBot"""
+        logging.info(f'BOT - Start listen for new messages at {config.SIGNALRPC_MESSAGE_STREAM_ENDPOINT}')
+        r = requests.get(config.SIGNALRPC_MESSAGE_STREAM_ENDPOINT, stream=True)
+
+        for line in r.iter_lines():
+            # filter out keep-alive new lines
+            if line:
+                decoded_line = line.decode('utf-8')
+                if decoded_line[:5] == 'data:':
+                    logging.debug(f'BOT - Received new message: {decoded_line[5:]}')
+                    for m in self._sh.parse_message(decoded_line[5:]):
+                        self._process_message(m)
 
 
 def main():
@@ -98,13 +125,30 @@ def main():
     # sb = SignalBot(filename=None, level=logging.DEBUG)
     # logging.StreamHandler(sys.stderr)
     # sb.run()
-    sb = SignalBot(level=logging.DEBUG)
-    schedule.every(30).seconds.until('22:30').do(sb.run)
+    desc = '''Create signalBOT or signalRPCBOT instance that receive and handles messages from users
 
-    while True:
-        schedule.run_pending()
-        time.sleep(1)
+This BOT has two options:
+signalBOT (default) - call each command by create subprocess of signal-cli tool. This is easier to
+                      to handle but is slow
+signalRPCBOT (use --rpc option to set) - uses HTTP jsonRPC endpoint to call signal-cli. Needs the
+                                         endpoint creation before you run the script in other thread.'''
+    parser = argparse.ArgumentParser(description=desc, formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser.add_argument('--rpc', action='store_true',
+                        help='If set the signalRPCBOT version will be used (instead of signalBOT)')
 
+    args = parser.parse_args()
+    is_rpc = args.rpc
+
+    if is_rpc:
+        sb = SignalRPCBot(level=logging.DEBUG)
+        sb.run()
+    else:
+        sb = SignalBot(level=logging.DEBUG)
+        schedule.every(30).seconds.until('22:30').do(sb.run)
+
+        while True:
+            schedule.run_pending()
+            time.sleep(1)
 
 if __name__ == '__main__':
     main()
