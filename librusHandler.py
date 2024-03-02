@@ -13,6 +13,9 @@ from selenium.webdriver.support.wait import WebDriverWait
 
 class LibrusHandler:
     """Handle connection and actions with Librus Synergia"""
+    _librus_username = None
+    _librus_password = None
+
     _cookie_button_class_name = 'modal-button__primary'
     _librus_menu_text = 'LIBRUS Synergia'
     _librus_menu_login_text = 'Zaloguj'
@@ -30,8 +33,11 @@ class LibrusHandler:
 
     driver = None
 
-    def __init__(self):
+    def __init__(self, username, password):
+        self._librus_username = username
+        self._librus_password = password
         self.driver = common.init_webdriver()
+        self._log_into_librus()
 
     def __enter__(self):
         return self
@@ -39,7 +45,7 @@ class LibrusHandler:
     def __exit__(self, exc_type, exc_value, traceback):
         common.destroy_webdriver(self.driver)
 
-    def log_into_librus(self, username, password):
+    def _log_into_librus(self):
         """Try to log into librusSynergia with given username/password"""
         try:
             expected_errors = [NoSuchElementException, StaleElementReferenceException]
@@ -58,8 +64,14 @@ class LibrusHandler:
             wait.until(lambda d: self.driver.find_element(By.LINK_TEXT, self._librus_menu_login_text).click() or True)
 
             wait.until(lambda d: self.driver.switch_to.frame(self._librus_login_frame) or True)
-            wait.until(lambda d: self.driver.find_element(By.ID, self._login_username_id).send_keys(username) or True)
-            wait.until(lambda d: self.driver.find_element(By.ID, self._login_password_id).send_keys(password) or True)
+            wait.until(
+                lambda d:
+                self.driver.find_element(By.ID, self._login_username_id).send_keys(self._librus_username) or True
+            )
+            wait.until(
+                lambda d:
+                self.driver.find_element(By.ID, self._login_password_id).send_keys(self._librus_password) or True
+            )
             wait.until(lambda d: self.driver.find_element(By.ID, self._login_button_id).click() or True)
 
             wait.until(lambda d: self.driver.switch_to.default_content() or True)

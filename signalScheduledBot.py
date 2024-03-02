@@ -23,21 +23,24 @@ class SignalScheduledBot:
         logging.basicConfig(filename=filename, encoding=encoding, level=level)
         self._sh = SignalHandler()
 
-    def check_new_messages(self):
-        with LibrusHandler() as lh:
-            lh.log_into_librus(config.LIBRUS_USERNAME, config.LIBRUS_PASSWORD)
-            messages = lh.get_new_message()
-            if messages is not None:
-                mn = len(messages)
-                logging.info(f'SignalScheduledBot - Found {mn} messages')
-                message_body = f'{mn} new message(s) in account {config.LIBRUS_USERNAME}:\n\n'
-                for i in range(0, mn):
-                    message_body += f'{i+1}. {messages[i]["sender"]}: {messages[i]["topic"]}\n\n'
+    def librus_check_new_messages(self):
+        try:
+            with LibrusHandler(config.LIBRUS_USERNAME, config.LIBRUS_PASSWORD) as lh:
+                messages = lh.get_new_message()
+                if messages is not None and len(messages) > 0:
+                    mn = len(messages)
+                    logging.info(f'SignalScheduledBot - Found {mn} messages')
+                    message_body = f'{mn} new message(s) in account {config.LIBRUS_USERNAME}:\n\n'
+                    for i in range(0, mn):
+                        message_body += f'{i+1}. {messages[i]["sender"]}: {messages[i]["topic"]}\n\n'
 
-                for s in config.LIBRUS_SUBSCRIBERS:
-                    self._sh.send_message(s, message_body)
-            else:
-                logging.info('SignalScheduledBot - No new messages')
+                    for s in config.LIBRUS_SUBSCRIBERS:
+                        self._sh.send_message(s, message_body)
+                else:
+                    logging.info('SignalScheduledBot - No new messages')
+        except RuntimeError as re:
+            logging.error(f'SignalScheduledBot - Cannot check new messages for account {config.LIBRUS_USERNAME}')
+            logging.error(f'SignalScheduledBot - exception: {re}')
 
 
 class SignalScheduledRPCBot(SignalScheduledBot):
@@ -73,10 +76,10 @@ signalScheduledRPCBOT (use --rpc option to set) - uses HTTP jsonRPC endpoint to 
 
     if is_rpc:
         s = SignalScheduledRPCBot(level=logging.DEBUG)
-        s.check_new_messages()
+        s.librus_check_new_messages()
     else:
         s = SignalScheduledBot(level=logging.DEBUG)
-        s.check_new_messages()
+        s.librus_check_new_messages()
 
 
 if __name__ == '__main__':
