@@ -18,8 +18,7 @@ YT_SERVER_PREFIX = ''
 
 # Librus Synergia settings:
 LIBRUS_LOGIN_PAGE = 'https://portal.librus.pl/rodzina'
-LIBRUS_USERNAME = ''
-LIBRUS_PASSWORD = ''
+LIBRUS_USERS = [{'account': 'user1', 'username': 'username', 'password': 'pass'}]
 
 LIBRUS_SUBSCRIBERS = []
 

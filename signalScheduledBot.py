@@ -24,23 +24,35 @@ class SignalScheduledBot:
         self._sh = SignalHandler()
 
     def librus_check_new_messages(self):
-        try:
-            with LibrusHandler(config.LIBRUS_USERNAME, config.LIBRUS_PASSWORD) as lh:
-                messages = lh.get_new_message()
-                if messages is not None and len(messages) > 0:
-                    mn = len(messages)
-                    logging.info(f'SignalScheduledBot - Found {mn} messages')
-                    message_body = f'{mn} new message(s) in account {config.LIBRUS_USERNAME}:\n\n'
-                    for i in range(0, mn):
-                        message_body += f'{i+1}. {messages[i]["sender"]}: {messages[i]["topic"]}\n\n'
+        """Check for unread messages in librusSynergia page"""
+        accounts = config.LIBRUS_USERS
+        for ac in accounts:
+            ac_name = ac['account']
+            ac_user = ac['username']
+            ac_pass = ac['password']
+            try:
+                logging.info(f'SignalScheduledBot - checking unread messages for {ac_name}')
+                with LibrusHandler(ac_user, ac_pass) as lh:
+                    messages = lh.get_new_message()
+                    if messages is not None and len(messages) > 0:
+                        self._send_new_librus_messages_to_subscribers(messages, ac_name)
+                    else:
+                        logging.info(f'SignalScheduledBot - No new messages for account {ac_name}')
+            except RuntimeError as re:
+                logging.error(f'SignalScheduledBot - Cannot check new messages for account {ac_name}')
+                logging.error(f'SignalScheduledBot - exception: {re}')
 
-                    for s in config.LIBRUS_SUBSCRIBERS:
-                        self._sh.send_message(s, message_body)
-                else:
-                    logging.info('SignalScheduledBot - No new messages')
-        except RuntimeError as re:
-            logging.error(f'SignalScheduledBot - Cannot check new messages for account {config.LIBRUS_USERNAME}')
-            logging.error(f'SignalScheduledBot - exception: {re}')
+    def _send_new_librus_messages_to_subscribers(self, messages, account):
+        """Send unread messages to subscribers"""
+        mn = len(messages)
+        logging.info(f'SignalScheduledBot - Found {mn} messages')
+        message_body = f'{mn} new message(s) in account {account}:\n\n'
+        for i in range(0, mn):
+            message_body += f'{i + 1}. {messages[i]["sender"]}: {messages[i]["topic"]}\n\n'
+
+        for s in config.LIBRUS_SUBSCRIBERS:
+            print(message_body)
+            # self._sh.send_message(s, message_body)
 
 
 class SignalScheduledRPCBot(SignalScheduledBot):
