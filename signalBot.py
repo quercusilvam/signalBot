@@ -96,7 +96,7 @@ class SignalBot:
 
 class SignalRPCBot(SignalBot):
     """Perform signalBot actions via jsonRPC endpoint rather than"""
-    _log_filename = 'signalBot.log'
+    _log_filename = 'signaRPClBot.log'
     _log_default_level = logging.INFO
     _log_default_encoding = 'utf8'
 
@@ -149,6 +149,7 @@ signalRPCBOT (use --rpc option to set) - uses HTTP jsonRPC endpoint to call sign
         while True:
             schedule.run_pending()
             time.sleep(1)
+
 
 if __name__ == '__main__':
     main()

@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 
+import common
 import config
+
 import json
 import logging
 import requests
@@ -8,11 +10,6 @@ import subprocess
 import sys
 
 from jsonrpcclient import request, parse, Ok
-
-
-def convert_list_to_dict(l):
-    """Return dict from list """
-    return {l[i]: l[i + 1] for i in range(0, len(l), 2)}
 
 
 class SignalHandler:
@@ -146,12 +143,15 @@ class SignalHandler:
 
         return new_messages
 
-    def _parse_receipt_response(self, output_lines):
+    def _parse_receipt_response(self, output_lines, decoded=False):
         """Parse send receipt response - if success or not"""
         receipts = []
 
         for ot in output_lines:
-            line = ot.decode(self._default_encoding)
+            if decoded:
+                line = ot
+            else:
+                line = ot.decode(self._default_encoding)
             logging.info(f'Parse receipt response')
             logging.debug(f'response_str: {line}')
             j = json.loads(line)
@@ -205,17 +205,17 @@ class SignalRPCHandler(SignalHandler):
             case _:
                 logging.debug(f'Command {command} does not need anny additional keywords')
 
-        params = convert_list_to_dict(extra_args)
+        params = common.convert_list_to_dict(extra_args)
         logging.info(f'Call {command} with params {params} on {config.SIGNALRPC_POST_ENDPOINT}')
 
         response = requests.post(config.SIGNALRPC_POST_ENDPOINT, json=request(command, params))
         parsed = parse(response.json())
         if isinstance(parsed, Ok):
-            print(parsed.result)
+            logging.debug(f'Call OK. Response: {parsed.result}')
+            return [parsed.result]
         else:
+            logging.error(f'Access API {command} failed: {parsed.message}')
             raise RuntimeError(f'Access API {command} failed: {parsed.message}')
-
-        return [] # to be compatible with super class
 
 
 class SignalMessage:
