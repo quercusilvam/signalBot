@@ -46,13 +46,13 @@ class SignalScheduledBot:
         """Send unread messages to subscribers"""
         mn = len(messages)
         logging.info(f'SignalScheduledBot - Found {mn} messages')
-        message_body = f'{mn} new message(s) in account {account}:\n\n'
         for i in range(0, mn):
-            message_body += f'{i + 1}. {messages[i]["sender"]}: {messages[i]["topic"]}\n\n'
+            message_body = f'New message in account {account}:\n\n'
+            message_body += f'{i + 1}. {messages[i]["sender"]}: {messages[i]["topic"]}\n\n{messages[i]["body"]}'
 
-        for s in config.LIBRUS_SUBSCRIBERS:
-            print(message_body)
-            # self._sh.send_message(s, message_body)
+            for s in config.LIBRUS_SUBSCRIBERS:
+                print(message_body)
+                # self._sh.send_message(s, message_body)
 
 
 class SignalScheduledRPCBot(SignalScheduledBot):

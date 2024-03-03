@@ -96,7 +96,7 @@ class SignalBot:
 
 class SignalRPCBot(SignalBot):
     """Perform signalBot actions via jsonRPC endpoint rather than"""
-    _log_filename = 'signaRPClBot.log'
+    _log_filename = 'signalRPCBot.log'
     _log_default_level = logging.INFO
     _log_default_encoding = 'utf8'
 

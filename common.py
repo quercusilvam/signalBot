@@ -1,5 +1,8 @@
 import config
 
+import random
+import time
+
 from selenium import webdriver
 
 
@@ -43,3 +46,11 @@ def init_webdriver():
 def destroy_webdriver(driver):
     """Cleanup webdriver"""
     driver.quit()
+
+
+def simulate_human_delay(min_secs=1, max_secs=5):
+    """Wait for random few seconds to simulate human delay between clicks in seconds
+
+       This is needed to protect our IP for automat that will discover we are bot
+    """
+    time.sleep(random.randint(min_secs, max_secs))
