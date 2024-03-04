@@ -7,7 +7,7 @@ cron = CronTab(user=True)
 path = os.path.abspath('./signalScheduledBot.py')
 
 # Unread messages
-job_um = cron.new(command='python3 ' + "'" + path + "--rpc --unread_messages'")
-job_um.setall('30 6-21 * * *')
+job_um = cron.new(command='python3 ' + "'" + path + "' --rpc --unread_messages")
+job_um.setall('30 7-22 * * *')
 
 cron.write()

@@ -48,7 +48,6 @@ class LibrusHandler:
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
-        self.driver.save_screenshot('exit_screenshot.png')
         common.destroy_webdriver(self.driver)
 
     def _log_into_librus(self):
