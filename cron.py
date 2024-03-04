@@ -4,10 +4,10 @@ from crontab import CronTab
 import os
 
 cron = CronTab(user=True)
+path = os.path.abspath('./signalScheduledBot.py')
 
-path = os.path.abspath('./signalBot.py')
-job = cron.new(command='python3 ' + "'" + path + "'")
-job.minute.on(0)
-job.hour.also.on(6)
+# Unread messages
+job_um = cron.new(command='python3 ' + "'" + path + "--rpc --unread_messages'")
+job_um.setall('30 6-21 * * *')
 
 cron.write()

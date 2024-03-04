@@ -113,14 +113,19 @@ class LibrusHandler:
             wait.until(lambda d: self.driver.find_element(By.ID, self._cookie_box_id).click() or True)
 
             wait.until(lambda d: self.driver.find_elements(By.CLASS_NAME, self._messages_table_line_class_name) or True)
-            messages_boxes = self.driver.find_elements(By.XPATH, self._messages_unread_xpath)
+            message_box = self.driver.find_element(By.XPATH, self._messages_unread_xpath)
 
             unread_messages = []
-            # First item is sender, second message topic - so use only odd ones
-            for i in range(0, len(messages_boxes), 2):
-                unread_messages.append(self._get_message_data(messages_boxes[i]))
-                common.simulate_human_delay()
-            return unread_messages
+            try:
+                while True:
+                    unread_messages.append(self._get_message_data(message_box))
+                    self.driver.get(config.LIBRUS_MESSAGES_PAGE)
+                    common.simulate_human_delay()
+                    wait.until(lambda d: self.driver.find_elements(By.CLASS_NAME, self._messages_table_line_class_name) or True)
+                    message_box = self.driver.find_element(By.XPATH, self._messages_unread_xpath)
+            except NoSuchElementException as te:
+                # All messages were fetched
+                return unread_messages
 
         except TimeoutException as te:
             logging.error('LibrusHandler - You are not logged. Cannot fetch messages')
@@ -147,11 +152,12 @@ class LibrusHandler:
 
             if message_box is not None:
                 logging.info(f'LibrusHandler - read message {message_box.text}')
-                self.driver.get(config.LIBRUS_MESSAGES_PAGE)
                 wait.until(lambda d: message_box.click() or True)
+                common.simulate_human_delay()
             elif url is not None:
                 logging.info(f'LibrusHandler - read message {url}')
                 self.driver.get(url)
+                common.simulate_human_delay()
             else:
                 logging.error('LibrusHandler._get_message_data - message_box or url must be provided but were Nones')
                 raise RuntimeError(

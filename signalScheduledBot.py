@@ -33,7 +33,7 @@ class SignalScheduledBot:
             try:
                 logging.info(f'SignalScheduledBot - checking unread messages for {ac_name}')
                 with LibrusHandler(ac_user, ac_pass) as lh:
-                    messages = lh.get_new_message()
+                    messages = lh.get_unread_messages()
                     if messages is not None and len(messages) > 0:
                         self._send_new_librus_messages_to_subscribers(messages, ac_name)
                     else:
@@ -51,8 +51,12 @@ class SignalScheduledBot:
             message_body += f'{i + 1}. {messages[i]["sender"]}: {messages[i]["topic"]}\n\n{messages[i]["body"]}'
 
             for s in config.LIBRUS_SUBSCRIBERS:
-                print(message_body)
-                # self._sh.send_message(s, message_body)
+                # print(message_body)
+                self._sh.send_message(s, message_body)
+
+    def librus_get_schedule(self, next_week=False):
+        """Get schedule for given accounts. This week (default) lub next one"""
+        logging.warning('Not implemented yet!')
 
 
 class SignalScheduledRPCBot(SignalScheduledBot):
@@ -82,16 +86,31 @@ signalScheduledRPCBOT (use --rpc option to set) - uses HTTP jsonRPC endpoint to 
     parser = argparse.ArgumentParser(description=desc, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument('--rpc', action='store_true',
                         help='If set the signalScheduledRPCBOT version will be used (instead of signalBOT)')
+    parser.add_argument('--unread_messages', action='store_true',
+                        help='If set return unread messages for all accounts to all subscribers')
+    parser.add_argument('--this_week_schedule', action='store_true',
+                        help='If set return schedule for this week for all accounts to all subscribers')
+    parser.add_argument('--next_week_schedule', action='store_true',
+                        help='If set return schedule for next week for all accounts to all subscribers. '
+                             'Useful in weekends')
 
     args = parser.parse_args()
     is_rpc = args.rpc
+    get_unread_messages = args.unread_messages
+    get_this_week_schedule = args.this_week_schedule
+    get_next_week_schedule = args.next_week_schedule
 
     if is_rpc:
-        s = SignalScheduledRPCBot(level=logging.DEBUG)
-        s.librus_check_new_messages()
+        s = SignalScheduledRPCBot(level=logging.INFO)
     else:
-        s = SignalScheduledBot(level=logging.DEBUG)
+        s = SignalScheduledBot(level=logging.INFO)
+
+    if get_unread_messages:
         s.librus_check_new_messages()
+    if get_this_week_schedule:
+        s.librus_get_schedule()
+    if get_next_week_schedule:
+        s.librus_get_schedule(next_week=True)
 
 
 if __name__ == '__main__':
