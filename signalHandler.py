@@ -15,6 +15,7 @@ from jsonrpcclient import request, parse, Ok
 class SignalHandler:
     """Handle signal program - parse output, handle commands etc."""
     _default_encoding = 'utf8'
+    _is_already_decoded = False
     _signal_cmd = [config.SIGNAL_CMD_PATH, '-o', 'json']
     _cmd_receive = 'receive'
     _cmd_send_receipt = 'sendReceipt'
@@ -102,6 +103,9 @@ class SignalHandler:
                 ])
             )
 
+    def parse_message(self, output_line):
+        return self._parse_messages([output_line])
+
     def _call(self, command, extra_args=[]):
         """Call main program"""
 
@@ -118,12 +122,12 @@ class SignalHandler:
         logging.debug(f'result.stdout: {result.stdout}')
         return result.stdout.splitlines()
 
-    def _parse_messages(self, output_lines, decoded=False):
+    def _parse_messages(self, output_lines):
         """Parse received messages and pack them into message class"""
         new_messages = []
 
         for ot in output_lines:
-            if decoded:
+            if self._is_already_decoded:
                 line = ot
             else:
                 line = ot.decode(self._default_encoding)
@@ -143,12 +147,12 @@ class SignalHandler:
 
         return new_messages
 
-    def _parse_receipt_response(self, output_lines, decoded=False):
+    def _parse_receipt_response(self, output_lines):
         """Parse send receipt response - if success or not"""
         receipts = []
 
         for ot in output_lines:
-            if decoded:
+            if self._is_already_decoded:
                 line = ot
             else:
                 line = ot.decode(self._default_encoding)
@@ -162,6 +166,7 @@ class SignalHandler:
 
 class SignalRPCHandler(SignalHandler):
     """Perform calls via jsonRCP endpoint; not directly"""
+    _is_already_decoded = True
     _cmd_send_receipt_param_recipient = 'recipient'
     _cmd_send_receipt_param_timestamp = 'targetTimestamp'
     _cmd_send_receipt_param_type = 'type'
@@ -178,9 +183,6 @@ class SignalRPCHandler(SignalHandler):
     def receive_new_messages(self):
         """For RPC this is not implemented"""
         logging.warning('This function should not be called for signalRPCHandler')
-
-    def parse_message(self, output_line):
-        return self._parse_messages([output_line], True)
 
     def _call(self, command, extra_args=[]):
         """Send jsonRPC request to signalcli endpoint
@@ -212,7 +214,7 @@ class SignalRPCHandler(SignalHandler):
         parsed = parse(response.json())
         if isinstance(parsed, Ok):
             logging.debug(f'Call OK. Response: {parsed.result}')
-            return [parsed.result]
+            return []
         else:
             logging.error(f'Access API {command} failed: {parsed.message}')
             raise RuntimeError(f'Access API {command} failed: {parsed.message}')
