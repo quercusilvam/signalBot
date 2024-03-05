@@ -29,6 +29,7 @@ class SignalHandler:
     _cmd_send_reaction_emoji_ok = '👍'
     _cmd_send_message = 'send'
     _cmd_send_message_param_message = '-m'
+    _cmd_send_message_param_attachment = '-a'
     _cmd_send_message_param_quote_timestamp = '--quote-timestamp'
     _cmd_send_message_param_quote_author = '--quote-author'
 
@@ -79,29 +80,22 @@ class SignalHandler:
             ])
         )
 
-    def send_message(self, recipient, message_body, quote_timestamp=None):
+    def send_message(self, recipient, message_body, quote_timestamp=None, attachments=[]):
         """Send a message to another user"""
         logging.debug(f'send_message.recipient: {recipient}')
         logging.debug(f'send_message.message_body: {message_body}')
-        if quote_timestamp is None:
-            return self._parse_receipt_response(
-                self._call(self._cmd_send_message, [
-                    recipient, self._cmd_send_message_param_message, message_body
-                ])
-            )
-        else:
-            logging.debug(f'send_message.quote_timestamp: {quote_timestamp}')
-            return self._parse_receipt_response(
-                self._call(self._cmd_send_message, [
-                    recipient,
-                    self._cmd_send_message_param_message,
-                    message_body,
-                    self._cmd_send_message_param_quote_timestamp,
-                    quote_timestamp,
-                    self._cmd_send_message_param_quote_author,
-                    recipient
-                ])
-            )
+        extra_args = [recipient, self._cmd_send_message_param_message, message_body]
+        if quote_timestamp is not None:
+            extra_args += [
+                self._cmd_send_message_param_quote_timestamp,
+                quote_timestamp,
+                self._cmd_send_message_param_quote_author,
+                recipient
+            ]
+        for a in attachments:
+            extra_args += [self._cmd_send_message_param_attachment, a]
+
+        return self._parse_receipt_response(self._call(self._cmd_send_message, extra_args))
 
     def parse_message(self, output_line):
         return self._parse_messages([output_line])
@@ -177,6 +171,7 @@ class SignalRPCHandler(SignalHandler):
     _cmd_send_reaction_param_emoji = 'emoji'
     _cmd_send_message_param_recipient = 'recipient'
     _cmd_send_message_param_message = 'message'
+    _cmd_send_message_param_attachment = 'attachment'
     _cmd_send_message_param_quote_timestamp = 'quoteTimestamp'
     _cmd_send_message_param_quote_author = 'quoteAuthor'
 

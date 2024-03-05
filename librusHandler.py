@@ -2,9 +2,8 @@ import logging
 
 import common
 import config
-import time
 
-import sys
+import os
 
 from selenium.common.exceptions import NoSuchElementException, StaleElementReferenceException, TimeoutException
 from selenium.webdriver.common.by import By
@@ -33,7 +32,10 @@ class LibrusHandler:
     _message_view_topic_xpath = '//html//body//div[3]//div[3]//form//div//div//table//tbody//tr//td[2]//table[2]//tbody//tr[2]//td[2]'
     _message_view_body_xpath ='//html//body//div[3]//div[3]//form//div//div//table//tbody//tr//td[2]/div'
 
-    _wait_timeout = 5
+    _schedule_form_name = 'formPrzegladajPlan'
+    _schedule_screenshot_filename = os.path.abspath('./schedule.png')
+
+    _wait_timeout = 10
     _wait_poll_frequency = .2
 
     driver = None
@@ -132,6 +134,29 @@ class LibrusHandler:
         except NoSuchElementException as te:
             logging.info('LibrusHandler - No new messages')
             return None
+
+    def get_schedule(self, next_week=False):
+        """Open schedule and return picture of it"""
+        try:
+            expected_errors = [NoSuchElementException, StaleElementReferenceException]
+
+            logging.info('LibrusHandler - Get schedule from librusSynergia.')
+            self.driver.get(config.LIBRUS_SCHEDULE_PAGE)
+            common.simulate_human_delay()
+            wait = WebDriverWait(
+                self.driver,
+                timeout=self._wait_timeout,
+                poll_frequency=self._wait_poll_frequency,
+                ignored_exceptions=expected_errors
+            )
+            wait.until(lambda d: self.driver.find_elements(By.NAME, self._schedule_form_name) or True)
+            self.driver.save_screenshot(self._schedule_screenshot_filename)
+
+            return self._schedule_screenshot_filename
+
+        except TimeoutException as te:
+            logging.error('LibrusHandler - You are not logged. Cannot fetch schedule')
+            raise RuntimeError(te)
 
     def _get_message_data(self, message_box=None, url=None):
         """Open message, read it body and return as dict

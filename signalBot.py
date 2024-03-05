@@ -52,6 +52,9 @@ Automated behaviors:
         for m in self._sh.receive_new_messages():
             self._process_message(m)
 
+    def test(self, test_account):
+        self._sh.send_message(test_account, 'Test message', attachments=['file.txt'])
+
     def welcome_message(self, new_account):
         """Return simple pong"""
         logging.info(f'BOT - Send welcome message to {new_account}\n\n'
@@ -165,21 +168,28 @@ signalRPCBOT (use --rpc option to set) - uses HTTP jsonRPC endpoint to call sign
                         help='If set the signalRPCBOT version will be used (instead of signalBOT)')
     parser.add_argument('--welcome', metavar=('PHONE_NUMBER'),
                         help='Send welcome message to given PHONE_NUMBER')
+    parser.add_argument('--test', metavar=('PHONE_NUMBER'),
+                        help='Send test message to given PHONE_NUMBER')
 
     args = parser.parse_args()
     is_rpc = args.rpc
     welcome_new_phone = args.welcome
+    test_message = args.test
 
     if is_rpc:
         sb = SignalRPCBot(level=logging.DEBUG)
         if welcome_new_phone is not None:
             sb.welcome_message(welcome_new_phone)
+        elif test_message is not None:
+            sb.test(test_message)
         else:
             sb.run()
     else:
         sb = SignalBot(level=logging.DEBUG)
         if welcome_new_phone is not None:
             sb.welcome_message(welcome_new_phone)
+        elif test_message is not None:
+            sb.test(test_message)
         else:
             schedule.every(30).seconds.until('22:30').do(sb.run)
 

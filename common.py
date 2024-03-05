@@ -17,7 +17,7 @@ def init_webdriver():
     options.add_argument('--ignore-certificate-errors')
     options.add_argument('--incognito')
     options.add_argument('--headless')
-    options.add_argument('--window-size=1024,720')
+    options.add_argument('--window-size=1400,1050')
     # unwanted tooling from https://github.com/GoogleChrome/chrome-launcher/blob/main/docs/chrome-flags-for-tools.md
     options.add_argument('--disable-client-side-phishing-detection')
     options.add_argument('--disable-extensions')

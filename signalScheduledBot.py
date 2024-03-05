@@ -35,28 +35,42 @@ class SignalScheduledBot:
                 with LibrusHandler(ac_user, ac_pass) as lh:
                     messages = lh.get_unread_messages()
                     if messages is not None and len(messages) > 0:
-                        self._send_new_librus_messages_to_subscribers(messages, ac_name)
+                        self._send_unread_messages_to_subscribers(messages, ac_name)
                     else:
                         logging.info(f'SignalScheduledBot - No new messages for account {ac_name}')
             except RuntimeError as re:
                 logging.error(f'SignalScheduledBot - Cannot check new messages for account {ac_name}')
                 logging.error(f'SignalScheduledBot - exception: {re}')
 
-    def _send_new_librus_messages_to_subscribers(self, messages, account):
+    def librus_get_schedule(self, next_week=False):
+        """Get schedule for given accounts. This week (default) lub next one"""
+        accounts = config.LIBRUS_USERS
+        for ac in accounts:
+            ac_name = ac['account']
+            ac_user = ac['username']
+            ac_pass = ac['password']
+            try:
+                logging.info(f'SignalScheduledBot - get schedule for {ac_name}')
+                with LibrusHandler(ac_user, ac_pass) as lh:
+                    message_body = f'Schedule for {ac_name}'
+                    schedule_file = lh.get_schedule()
+                    self._send_message_to_librus_subscribers(message_body, attachments=[schedule_file])
+            except RuntimeError as re:
+                logging.error(f'SignalScheduledBot - Cannot check schedule for account {ac_name}')
+                logging.error(f'SignalScheduledBot - exception: {re}')
+
+    def _send_unread_messages_to_subscribers(self, messages, account):
         """Send unread messages to subscribers"""
         mn = len(messages)
         logging.info(f'SignalScheduledBot - Found {mn} messages')
         for i in range(0, mn):
             message_body = f'New message in account {account}:\n\n'
             message_body += f'{i + 1}. {messages[i]["sender"]}: {messages[i]["topic"]}\n\n{messages[i]["body"]}'
+            self._send_message_to_librus_subscribers(message_body)
 
-            for s in config.LIBRUS_SUBSCRIBERS:
-                # print(message_body)
-                self._sh.send_message(s, message_body)
-
-    def librus_get_schedule(self, next_week=False):
-        """Get schedule for given accounts. This week (default) lub next one"""
-        logging.warning('Not implemented yet!')
+    def _send_message_to_librus_subscribers(self, message_body, attachments=[]):
+        for s in config.LIBRUS_SUBSCRIBERS:
+            self._sh.send_message(s, message_body, attachments=attachments)
 
 
 class SignalScheduledRPCBot(SignalScheduledBot):
