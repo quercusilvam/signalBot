@@ -48,7 +48,7 @@ def destroy_webdriver(driver):
     driver.quit()
 
 
-def simulate_human_delay(min_secs=1, max_secs=5):
+def simulate_human_delay(min_secs=3, max_secs=10):
     """Wait for random few seconds to simulate human delay between clicks in seconds
 
        This is needed to protect our IP for automat that will discover we are bot

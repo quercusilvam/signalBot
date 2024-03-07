@@ -15,6 +15,8 @@ class LibrusHandler:
     _librus_username = None
     _librus_password = None
 
+    _error_screenshot_filename = os.path.abspath('./error.png')
+
     _cookie_button_class_name = 'modal-button__primary'
     _cookie_box_id = 'cookieBoxClose'
 
@@ -92,6 +94,7 @@ class LibrusHandler:
 
         except TimeoutException as te:
             logging.error('LibrusHandler - Cannot login into librusSynergia! Check your credentials')
+            self.driver.save_screenshot(self._error_screenshot_filename)
             raise RuntimeError(te)
         else:
             logging.info('LibrusHandler - Successfully logged into librusSynergia!')
@@ -130,6 +133,7 @@ class LibrusHandler:
 
         except TimeoutException as te:
             logging.error('LibrusHandler - You are not logged. Cannot fetch messages')
+            self.driver.save_screenshot(self._error_screenshot_filename)
             raise RuntimeError(te)
         except NoSuchElementException as te:
             logging.info('LibrusHandler - No new messages')
@@ -156,7 +160,11 @@ class LibrusHandler:
 
         except TimeoutException as te:
             logging.error('LibrusHandler - You are not logged. Cannot fetch schedule')
+            self.driver.save_screenshot(self._error_screenshot_filename)
             raise RuntimeError(te)
+
+    def get_error_screenshot(self):
+        return self._error_screenshot_filename
 
     def _get_message_data(self, message_box=None, url=None):
         """Open message, read it body and return as dict
@@ -205,4 +213,5 @@ class LibrusHandler:
 
         except TimeoutException as te:
             logging.error('LibrusHandler - You are not logged. Cannot read message body')
+            self.driver.save_screenshot(self._error_screenshot_filename)
             raise RuntimeError(te)

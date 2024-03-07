@@ -20,7 +20,11 @@ class SignalScheduledBot:
 
     def __init__(self, filename=_log_filename, encoding=_log_default_encoding, level=_log_default_level):
         """Init logging, signal handler etc."""
-        logging.basicConfig(filename=filename, encoding=encoding, level=level)
+        logging.basicConfig(format='%(asctime)s %(levelname)s %(message)s',
+                            datefmt='%Y-%m-%d %H:%M:%S',
+                            filename=filename,
+                            encoding=encoding,
+                            level=level)
         self._sh = SignalHandler()
 
     def librus_check_new_messages(self):
@@ -40,7 +44,10 @@ class SignalScheduledBot:
                         logging.info(f'SignalScheduledBot - No new messages for account {ac_name}')
             except RuntimeError as re:
                 logging.error(f'SignalScheduledBot - Cannot check new messages for account {ac_name}', exc_info=True)
-                self._send_error_message(f'SignalScheduledBot - Cannot check new messages for account {ac_name}')
+                self._send_error_message(f'SignalScheduledBot - Cannot check new messages for account {ac_name}',
+                                         attachments=[lh.get_error_screenshot()])
+                self._send_message_to_librus_subscribers(f'Cannot check new messages for account {ac_name}\n'
+                                                         'Please do it manually')
 
     def librus_get_schedule(self, next_week=False):
         """Get schedule for given accounts. This week (default) lub next one"""
@@ -57,7 +64,10 @@ class SignalScheduledBot:
                     self._send_message_to_librus_subscribers(message_body, attachments=[schedule_file])
             except RuntimeError:
                 logging.error(f'SignalScheduledBot - Cannot check schedule for account {ac_name}', exc_info=True)
-                self._send_error_message(f'SignalScheduledBot - Cannot check schedule for account {ac_name}')
+                self._send_error_message(f'SignalScheduledBot - Cannot check schedule for account {ac_name}',
+                                         attachments=[lh.get_error_screenshot()])
+                self._send_message_to_librus_subscribers(f'Cannot check schedule for account {ac_name}\n'
+                                                         'Please do it manually')
 
     def _send_unread_messages_to_librus_subscribers(self, messages, account):
         """Send unread messages to subscribers"""
@@ -86,7 +96,11 @@ class SignalScheduledRPCBot(SignalScheduledBot):
 
     def __init__(self, filename=_log_filename, encoding=_log_default_encoding, level=_log_default_level):
         """Init logging, signal handler etc."""
-        logging.basicConfig(filename=filename, encoding=encoding, level=level)
+        logging.basicConfig(format='%(asctime)s %(levelname)s %(message)s',
+                            datefmt='%Y-%m-%d %H:%M:%S',
+                            filename=filename,
+                            encoding=encoding,
+                            level=level)
         self._sh = SignalRPCHandler()
 
 

@@ -44,7 +44,11 @@ Automated behaviors:
 
     def __init__(self, filename=_log_filename, encoding=_log_default_encoding, level=_log_default_level):
         """Init logging, signal handler etc."""
-        logging.basicConfig(filename=filename, encoding=encoding, level=level)
+        logging.basicConfig(format='%(asctime)s %(levelname)s %(message)s',
+                            datefmt='%Y-%m-%d %H:%M:%S',
+                            filename=filename,
+                            encoding=encoding,
+                            level=level)
         self._sh = SignalHandler()
 
     def run(self):
@@ -142,7 +146,11 @@ class SignalRPCBot(SignalBot):
 
     def __init__(self, filename=_log_filename, encoding=_log_default_encoding, level=_log_default_level):
         """Init logging, signal handler etc."""
-        logging.basicConfig(filename=filename, encoding=encoding, level=level)
+        logging.basicConfig(format='%(asctime)s %(levelname)s %(message)s',
+                            datefmt='%Y-%m-%d %H:%M:%S',
+                            filename=filename,
+                            encoding=encoding,
+                            level=level)
         self._sh = SignalRPCHandler()
 
     def run(self):
