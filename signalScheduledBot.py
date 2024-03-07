@@ -35,12 +35,13 @@ class SignalScheduledBot:
                 with LibrusHandler(ac_user, ac_pass) as lh:
                     messages = lh.get_unread_messages()
                     if messages is not None and len(messages) > 0:
-                        self._send_unread_messages_to_subscribers(messages, ac_name)
+                        self._send_unread_messages_to_librus_subscribers(messages, ac_name)
                     else:
                         logging.info(f'SignalScheduledBot - No new messages for account {ac_name}')
             except RuntimeError as re:
                 logging.error(f'SignalScheduledBot - Cannot check new messages for account {ac_name}')
                 logging.error(f'SignalScheduledBot - exception: {re}')
+                self._send_error_message(f'SignalScheduledBot - Cannot check new messages for account {ac_name}')
 
     def librus_get_schedule(self, next_week=False):
         """Get schedule for given accounts. This week (default) lub next one"""
@@ -58,8 +59,9 @@ class SignalScheduledBot:
             except RuntimeError as re:
                 logging.error(f'SignalScheduledBot - Cannot check schedule for account {ac_name}')
                 logging.error(f'SignalScheduledBot - exception: {re}')
+                self._send_error_message(f'SignalScheduledBot - Cannot check schedule for account {ac_name}')
 
-    def _send_unread_messages_to_subscribers(self, messages, account):
+    def _send_unread_messages_to_librus_subscribers(self, messages, account):
         """Send unread messages to subscribers"""
         mn = len(messages)
         logging.info(f'SignalScheduledBot - Found {mn} messages')
@@ -71,6 +73,11 @@ class SignalScheduledBot:
     def _send_message_to_librus_subscribers(self, message_body, attachments=[]):
         for s in config.LIBRUS_SUBSCRIBERS:
             self._sh.send_message(s, message_body, attachments=attachments)
+
+    def _send_error_message(self, message_body, attachments=[]):
+        """Send messages to admins about errors"""
+        for a in config.SIGNAL_ADMINS:
+            self._sh.send_message(a, message_body, attachments=attachments)
 
 
 class SignalScheduledRPCBot(SignalScheduledBot):
