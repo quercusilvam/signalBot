@@ -39,8 +39,7 @@ class SignalScheduledBot:
                     else:
                         logging.info(f'SignalScheduledBot - No new messages for account {ac_name}')
             except RuntimeError as re:
-                logging.error(f'SignalScheduledBot - Cannot check new messages for account {ac_name}')
-                logging.error(f'SignalScheduledBot - exception: {re}')
+                logging.error(f'SignalScheduledBot - Cannot check new messages for account {ac_name}', exc_info=True)
                 self._send_error_message(f'SignalScheduledBot - Cannot check new messages for account {ac_name}')
 
     def librus_get_schedule(self, next_week=False):
@@ -56,9 +55,8 @@ class SignalScheduledBot:
                     message_body = f'Schedule for {ac_name}'
                     schedule_file = lh.get_schedule()
                     self._send_message_to_librus_subscribers(message_body, attachments=[schedule_file])
-            except RuntimeError as re:
-                logging.error(f'SignalScheduledBot - Cannot check schedule for account {ac_name}')
-                logging.error(f'SignalScheduledBot - exception: {re}')
+            except RuntimeError:
+                logging.error(f'SignalScheduledBot - Cannot check schedule for account {ac_name}', exc_info=True)
                 self._send_error_message(f'SignalScheduledBot - Cannot check schedule for account {ac_name}')
 
     def _send_unread_messages_to_librus_subscribers(self, messages, account):

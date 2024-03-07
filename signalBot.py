@@ -49,8 +49,12 @@ Automated behaviors:
 
     def run(self):
         """Main loop of signalBot"""
-        for m in self._sh.receive_new_messages():
-            self._process_message(m)
+        try:
+            for m in self._sh.receive_new_messages():
+                self._process_message(m)
+        except Exception:
+            logging.error('SignalBot - unexpected error', exc_info=True)
+            self._send_error_message('SignalBot - unexpected error')
 
     def test(self, test_account):
         self._sh.send_message(test_account, 'Test message', attachments=['file.txt'])
@@ -123,6 +127,11 @@ Automated behaviors:
         logging.info(f'BOT - Found reaction')
         logging.warning('Not implemented yet!')
 
+    def _send_error_message(self, message_body, attachments=[]):
+        """Send messages to admins about errors"""
+        for a in config.SIGNAL_ADMINS:
+            self._sh.send_message(a, message_body, attachments=attachments)
+
 
 class SignalRPCBot(SignalBot):
     """Perform signalBot actions via jsonRPC endpoint rather than"""
@@ -138,17 +147,23 @@ class SignalRPCBot(SignalBot):
 
     def run(self):
         """Main loop of signalBot"""
-        logging.info(f'BOT - Start listen for new messages at {config.SIGNALRPC_MESSAGE_STREAM_ENDPOINT}')
-        r = requests.get(config.SIGNALRPC_MESSAGE_STREAM_ENDPOINT, stream=True)
+        try:
+            logging.info(f'BOT - Start listen for new messages at {config.SIGNALRPC_MESSAGE_STREAM_ENDPOINT}')
+            r = requests.get(config.SIGNALRPC_MESSAGE_STREAM_ENDPOINT, stream=True)
 
-        for line in r.iter_lines():
-            # filter out keep-alive new lines
-            if line:
-                decoded_line = line.decode('utf-8')
-                if decoded_line[:5] == 'data:':
-                    logging.debug(f'BOT - Received new message: {decoded_line[5:]}')
-                    for m in self._sh.parse_message(decoded_line[5:]):
-                        self._process_message(m)
+            for line in r.iter_lines():
+                # filter out keep-alive new lines
+                if line:
+                    decoded_line = line.decode('utf-8')
+                    if decoded_line[:5] == 'data:':
+                        logging.debug(f'BOT - Received new message: {decoded_line[5:]}')
+                        for m in self._sh.parse_message(decoded_line[5:]):
+                            self._process_message(m)
+        except Exception:
+            logging.error('SignalBot - unexpected error', exc_info=True)
+            self._send_error_message('SignalBot - FATAL: unexpected error.')
+
+
 
 
 def main():
