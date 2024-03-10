@@ -30,6 +30,8 @@ def main():
         job_schedule_morning.setall('0 8 * * MON-FRI')
         job_schedule_afternoon = cron.new(command='python3 ' + "'" + path + "' --rpc --this_week_schedule")
         job_schedule_afternoon.setall('30 19 * * MON-THU')
+        job_schedule_sunday = cron.new(command='python3 ' + "'" + path + "' --rpc --next_week_schedule")
+        job_schedule_sunday.setall('30 19 * * SUN')
 
         cron.write()
     else:

@@ -60,7 +60,9 @@ class SignalScheduledBot:
                 logging.info(f'SignalScheduledBot - get schedule for {ac_name}')
                 with LibrusHandler(ac_user, ac_pass) as lh:
                     message_body = f'Schedule for {ac_name}'
-                    schedule_file = lh.get_schedule()
+                    if next_week:
+                        message_body += ' for next week'
+                    schedule_file = lh.get_schedule(next_week=next_week)
                     self._send_message_to_librus_subscribers(message_body, attachments=[schedule_file])
             except RuntimeError:
                 logging.error(f'SignalScheduledBot - Cannot check schedule for account {ac_name}', exc_info=True)

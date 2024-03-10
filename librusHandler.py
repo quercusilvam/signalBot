@@ -35,6 +35,7 @@ class LibrusHandler:
     _message_view_body_xpath ='//html//body//div[3]//div[3]//form//div//div//table//tbody//tr//td[2]/div'
 
     _schedule_form_name = 'formPrzegladajPlan'
+    _schedule_next_week_xpath='//html//body//div[1]//div//div//div//form//table[1]//tbody//tr[1]//th//a[2]//img'
     _schedule_screenshot_filename = os.path.abspath('./schedule.png')
 
     _wait_timeout = 10
@@ -153,7 +154,11 @@ class LibrusHandler:
                 poll_frequency=self._wait_poll_frequency,
                 ignored_exceptions=expected_errors
             )
-            wait.until(lambda d: self.driver.find_elements(By.NAME, self._schedule_form_name) or True)
+            if next_week:
+                wait.until(lambda d: self.driver.find_element(By.XPATH, self._schedule_next_week_xpath).click() or True)
+                common.simulate_human_delay()
+
+            wait.until(lambda d: self.driver.find_element(By.NAME, self._schedule_form_name) or True)
             self.driver.save_screenshot(self._schedule_screenshot_filename)
 
             return self._schedule_screenshot_filename
